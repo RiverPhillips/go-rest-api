@@ -1,0 +1,145 @@
+openapi: '3.0.2'
+info:
+  title: Todo API
+  version: '1.0'
+servers:
+  - url: http://localhost:8080/api
+
+components:
+  schemas:
+    CreateTodoRequest:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: [todos]              
+            attributes:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+    CreateTodoResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: [todos]
+            id:
+              type: number                  
+            attributes:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                completed:
+                  type: boolean
+                createdAt:
+                  type: string
+                  format: date-time
+                updatedAt:
+                  type: string
+                  format: date-time
+            links:
+              type: object
+              properties:
+                self:
+                  type: string
+                  format: uri
+    Errors:
+      type: array
+      $ref: '#/components/schemas/Error'
+    Error:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        links:
+          type: object
+          properties:
+            about:
+              type: string
+              format: uri
+            type:
+              type: string
+              format: uri
+            status:
+              type: number
+              format: int32
+              description: HTTP status code
+            code:
+              type: string
+              description: Application specific error code
+            title:
+              type: string
+              description: Short description of the error
+            detail:
+              type: string
+              description: Detailed description of the error
+            source:
+              type: object
+              properties:
+                pointer:
+                  type: string
+                  description: JSON Pointer to the error field
+                parameter:
+                  type: string
+                  description: Request parameter that caused the error
+                header:
+                  type: string
+                  description: Request header that caused the error
+            meta:
+              type: object
+              description: Additional error metadata
+
+paths:          
+  /v1/todos:
+    post:
+      summary: Create a new todo
+      operationId: createTodo
+      requestBody:
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              type: object
+              $ref: '#/components/schemas/CreateTodoRequest'
+      responses:
+        '201':
+          description: Todo created
+          content:
+            application/vnd.api+json:
+              schema:
+                type: object
+                $ref: '#/components/schemas/CreateTodoResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/vnd.api+json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    $ref: '#/components/schemas/Errors'
+        '409':
+          description: Conflict
+          content:
+            application/vnd.api+json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    $ref: '#/components/schemas/Errors'                    
+          
