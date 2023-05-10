@@ -1,20 +1,47 @@
 package main
 
 import (
+	"database/sql"
+	"embed"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/RiverPhillips/go-rest-api/pkg/domain/todo/handler"
+	"github.com/RiverPhillips/go-rest-api/pkg/domain/todo/repository"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	_ "github.com/lib/pq"
+	"github.com/pressly/goose/v3"
 )
 
 var port = flag.String("port", "8080", "port to serve on")
 
+//go:embed migrations/*.sql
+var embedMigrations embed.FS
+
 func main() {
+	dbUrl := os.Getenv("DATABASE_URL")
+	db, err := sql.Open("pq", dbUrl)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		os.Exit(1)
+	}
+	defer db.Close()
+
+	goose.SetBaseFS(embedMigrations)
+
+	if err := goose.SetDialect("postgres"); err != nil {
+		panic(err)
+	}
+
+	if err := goose.Up(db, "migrations"); err != nil {
+		panic(err)
+	}
+
 	flag.Parse()
 
 	r := chi.NewRouter()
@@ -28,7 +55,11 @@ func main() {
 		middleware.Timeout(10*time.Second),
 	)
 
-	r.Route("/api/v1/todos", handler.NewTodoHandlerV1().Route())
+	todoRepo := repository.NewTodoRepository(db)
+
+	r.Route("/api/v1/todos", handler.NewTodoHandlerV1(
+		todoRepo,
+	).Route())
 
 	log.Print("Starting server on port ", *port)
 

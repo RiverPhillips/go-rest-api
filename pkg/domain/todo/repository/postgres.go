@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"time"
 
@@ -8,7 +9,7 @@ import (
 )
 
 type Todo interface {
-	Create(todo *todo.CreateTodoAttributes) (int, time.Time, error)
+	Create(ctx context.Context, todo *todo.CreateTodoAttributes) (int, time.Time, error)
 }
 
 const (
@@ -23,8 +24,8 @@ func NewTodoRepository(db sql.DB) Todo {
 	return &todoRepository{db}
 }
 
-func (r *todoRepository) Create(todo *todo.CreateTodoAttributes) (todoId int, createdAt time.Time, err error) {
-	if err = r.db.QueryRow(InsertIntoTodo, todo.Title, todo.Description, todo.Completed).Scan(&todoId, createdAt); err != nil {
+func (r *todoRepository) Create(ctx context.Context, todo *todo.CreateTodoAttributes) (todoId int, createdAt time.Time, err error) {
+	if err = r.db.QueryRowContext(ctx, InsertIntoTodo, todo.Title, todo.Description, todo.Completed).Scan(&todoId, createdAt); err != nil {
 		return 0, time.Time{}, err
 	}
 

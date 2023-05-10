@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/RiverPhillips/go-rest-api/pkg/domain/todo"
+	"github.com/RiverPhillips/go-rest-api/pkg/domain/todo/repository"
 	"github.com/RiverPhillips/go-rest-api/pkg/resources"
 	"github.com/go-chi/chi/v5"
 )
@@ -15,10 +15,13 @@ import (
 var _ resources.Handler = (*todoHandlerV1)(nil)
 
 type todoHandlerV1 struct {
+	repo repository.Todo
 }
 
-func NewTodoHandlerV1() resources.Handler {
-	return &todoHandlerV1{}
+func NewTodoHandlerV1(repo repository.Todo) resources.Handler {
+	return &todoHandlerV1{
+		repo: repo,
+	}
 }
 
 func (t *todoHandlerV1) Route() func(r chi.Router) {
@@ -37,6 +40,13 @@ func (t *todoHandlerV1) createTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	id, createdAt, err := t.repo.Create(r.Context(), &req.Data.Attributes)
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	created := todo.CreateTodoResponse{
 		Data: todo.CreateTodoResponseData{
 			Type: "todos",
@@ -44,11 +54,12 @@ func (t *todoHandlerV1) createTodo(w http.ResponseWriter, r *http.Request) {
 				Title:       req.Data.Attributes.Title,
 				Description: req.Data.Attributes.Description,
 				Completed:   false,
-				UpdatedAt:   time.Now(),
+				UpdatedAt:   createdAt,
+				CreatedAt:   createdAt,
 			},
-			Id: 1,
+			Id: id,
 			Links: resources.Links{
-				Self: fmt.Sprintf("http://localhost:8080/%s/%d", r.URL.Path, 1),
+				Self: fmt.Sprintf("http://localhost:8080/%s/%d", r.URL.Path, id),
 			},
 		},
 	}
