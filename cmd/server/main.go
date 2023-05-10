@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"embed"
 	"flag"
@@ -14,7 +15,7 @@ import (
 	"github.com/RiverPhillips/go-rest-api/pkg/domain/todo/repository"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pressly/goose/v3"
 )
 
@@ -25,7 +26,7 @@ var embedMigrations embed.FS
 
 func main() {
 	dbUrl := os.Getenv("DATABASE_URL")
-	db, err := sql.Open("pq", dbUrl)
+	db, err := sql.Open("pqx", dbUrl)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
@@ -55,7 +56,14 @@ func main() {
 		middleware.Timeout(10*time.Second),
 	)
 
-	todoRepo := repository.NewTodoRepository(db)
+	dbpool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
+		os.Exit(1)
+	}
+	defer dbpool.Close()
+
+	todoRepo := repository.NewTodoRepository(dbpool)
 
 	r.Route("/api/v1/todos", handler.NewTodoHandlerV1(
 		todoRepo,

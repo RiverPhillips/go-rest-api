@@ -2,10 +2,10 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"time"
 
 	"github.com/RiverPhillips/go-rest-api/pkg/domain/todo"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Todo interface {
@@ -17,15 +17,15 @@ const (
 )
 
 type todoRepository struct {
-	db sql.DB
+	pool *pgxpool.Pool
 }
 
-func NewTodoRepository(db sql.DB) Todo {
-	return &todoRepository{db}
+func NewTodoRepository(pool *pgxpool.Pool) Todo {
+	return &todoRepository{pool}
 }
 
 func (r *todoRepository) Create(ctx context.Context, todo *todo.CreateTodoAttributes) (todoId int, createdAt time.Time, err error) {
-	if err = r.db.QueryRowContext(ctx, InsertIntoTodo, todo.Title, todo.Description, todo.Completed).Scan(&todoId, createdAt); err != nil {
+	if err = r.pool.QueryRow(ctx, InsertIntoTodo, todo.Title, todo.Description, todo.Completed).Scan(&todoId, createdAt); err != nil {
 		return 0, time.Time{}, err
 	}
 
