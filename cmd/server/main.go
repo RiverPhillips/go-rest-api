@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
-	"embed"
 	"flag"
 	"fmt"
 	"log"
@@ -16,32 +14,18 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/pressly/goose/v3"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 var port = flag.String("port", "8080", "port to serve on")
 
-//go:embed migrations/*.sql
-var embedMigrations embed.FS
-
 func main() {
-	dbUrl := os.Getenv("DATABASE_URL")
-	db, err := sql.Open("pqx", dbUrl)
+	dbpool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
 		os.Exit(1)
 	}
-	defer db.Close()
-
-	goose.SetBaseFS(embedMigrations)
-
-	if err := goose.SetDialect("postgres"); err != nil {
-		panic(err)
-	}
-
-	if err := goose.Up(db, "migrations"); err != nil {
-		panic(err)
-	}
+	defer dbpool.Close()
 
 	flag.Parse()
 
@@ -55,13 +39,6 @@ func main() {
 		middleware.Compress(5),
 		middleware.Timeout(10*time.Second),
 	)
-
-	dbpool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
-		os.Exit(1)
-	}
-	defer dbpool.Close()
 
 	todoRepo := repository.NewTodoRepository(dbpool)
 

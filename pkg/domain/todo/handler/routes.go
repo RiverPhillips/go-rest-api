@@ -54,12 +54,12 @@ func (t *todoHandlerV1) createTodo(w http.ResponseWriter, r *http.Request) {
 				Title:       req.Data.Attributes.Title,
 				Description: req.Data.Attributes.Description,
 				Completed:   false,
-				UpdatedAt:   createdAt,
-				CreatedAt:   createdAt,
+				UpdatedAt:   createdAt.Time,
+				CreatedAt:   createdAt.Time,
 			},
 			Id: id,
 			Links: resources.Links{
-				Self: fmt.Sprintf("http://localhost:8080/%s/%d", r.URL.Path, id),
+				Self: fmt.Sprintf("http://localhost:8080%s/%d", r.URL.Path, id),
 			},
 		},
 	}
