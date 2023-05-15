@@ -1,7 +1,9 @@
+// Package todo is the package that contains the todo domain
 package todo
 
+// Schema is the database schema for the todo table
 type Schema struct {
-	Id          int    `db:"id"`
+	ID          int    `db:"id"`
 	Title       string `db:"title"`
 	Description string `db:"description"`
 	Completed   bool   `db:"completed"`

@@ -1,3 +1,4 @@
+// Package handler is the package that contains the http handlers for the todo domain
 package handler
 
 import (
@@ -18,6 +19,7 @@ type todoHandlerV1 struct {
 	repo repository.Todo
 }
 
+// NewTodoHandlerV1 creates a new instance of TodoHandlerV1
 func NewTodoHandlerV1(repo repository.Todo) resources.Handler {
 	return &todoHandlerV1{
 		repo: repo,
@@ -57,15 +59,19 @@ func (t *todoHandlerV1) createTodo(w http.ResponseWriter, r *http.Request) {
 				UpdatedAt:   createdAt.Time,
 				CreatedAt:   createdAt.Time,
 			},
-			Id: id,
+			ID: id,
 			Links: resources.Links{
 				Self: fmt.Sprintf("http://localhost:8080%s/%d", r.URL.Path, id),
 			},
 		},
 	}
 
+	if err := json.NewEncoder(w).Encode(created); err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Location", created.Data.Links.Self)
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(created)
 }

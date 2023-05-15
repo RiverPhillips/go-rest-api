@@ -1,3 +1,4 @@
+// Package repository is the package that contains the repository interfaces and implementations
 package repository
 
 import (
@@ -8,12 +9,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// Todo is the interface for the todo repository
 type Todo interface {
-	Create(ctx context.Context, todo *todo.CreateTodoAttributes) (todoId int, createdAt pgtype.Timestamp, err error)
+	Create(ctx context.Context, todo *todo.CreateTodoAttributes) (todoID int, createdAt pgtype.Timestamp, err error)
 }
 
 const (
-	InsertIntoTodo = "INSERT INTO todo (title, description, completed) VALUES ($1, $2, $3) RETURNING id, created_at;"
+	insertIntoTodo = "INSERT INTO todo (title, description, completed) VALUES ($1, $2, $3) RETURNING id, created_at;"
 )
 
 var _ Todo = (*todoRepository)(nil)
@@ -22,14 +24,16 @@ type todoRepository struct {
 	pool *pgxpool.Pool
 }
 
+// NewTodoRepository creates a new instance of TodoRepository
 func NewTodoRepository(pool *pgxpool.Pool) Todo {
 	return &todoRepository{pool}
 }
 
-func (r *todoRepository) Create(ctx context.Context, todo *todo.CreateTodoAttributes) (todoId int, createdAt pgtype.Timestamp, err error) {
-	if err = r.pool.QueryRow(ctx, InsertIntoTodo, todo.Title, todo.Description, todo.Completed).Scan(&todoId, &createdAt); err != nil {
+// Create creates a new todo in the database
+func (r *todoRepository) Create(ctx context.Context, todo *todo.CreateTodoAttributes) (todoID int, createdAt pgtype.Timestamp, err error) {
+	if err = r.pool.QueryRow(ctx, insertIntoTodo, todo.Title, todo.Description, todo.Completed).Scan(&todoID, &createdAt); err != nil {
 		return 0, pgtype.Timestamp{}, err
 	}
 
-	return todoId, createdAt, nil
+	return todoID, createdAt, nil
 }
